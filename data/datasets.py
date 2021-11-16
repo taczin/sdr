@@ -33,7 +33,7 @@ class WikipediaTextDatasetParagraphsSentences(Dataset):
 
         self.hparams = hparams
 
-        max_article_len,max_sentences, max_sent_len = int(1e6), 16, 10000
+        max_article_len, max_sentences, max_sent_len = int(1e6), 16, 10000
         block_size = min(block_size, tokenizer.max_len_sentences_pair) if tokenizer is not None else block_size
         self.block_size = block_size
         self.tokenizer = tokenizer
@@ -108,8 +108,8 @@ class WikipediaTextDatasetParagraphsSentences(Dataset):
         return all_articles
 
     def read_all_articles(self, raw_data_path):
-        csv.field_size_limit(sys.maxsize)
-        with open(raw_data_path, newline="") as f:
+        csv.field_size_limit(sys.maxsize if sys.maxsize < 2147483647 else 2147483647)
+        with open(raw_data_path, encoding='utf8', newline="") as f:
             reader = csv.reader(f)
             all_articles = list(reader)
         return all_articles[1:]
@@ -118,7 +118,8 @@ class WikipediaTextDatasetParagraphsSentences(Dataset):
         raw_data_path = f"data/datasets/{dataset_name}/raw_data"
         os.makedirs(os.path.dirname(raw_data_path), exist_ok=True)
         if not os.path.exists(raw_data_path):
-            os.system(f"wget -O {raw_data_path} {raw_data_link(dataset_name)}")
+            #os.system(f"wget -O {raw_data_path} {raw_data_link(dataset_name)}")
+            os.system(f"curl.exe -o {raw_data_path} {raw_data_link(dataset_name)}")
         return raw_data_path
 
     def __len__(self):
