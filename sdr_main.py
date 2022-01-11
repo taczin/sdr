@@ -71,8 +71,7 @@ def main_train(model_class_pointer, hparams,parser):
         profiler=SimpleProfiler(),
         accumulate_grad_batches=hparams.accumulate_grad_batches,
         reload_dataloaders_every_epoch=True,
-        # load
-        resume_from_checkpoint=hparams.resume_from_checkpoint,
+        resume_from_checkpoint=hparams.resume_from_checkpoint
     )
     if(not hparams.test_only):
         trainer.fit(model, datamodule=sdr_dm)
