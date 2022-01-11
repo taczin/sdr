@@ -38,6 +38,8 @@ def evaluate_wiki_recos(recos, output_path, gt_path, examples):
 def calculate_mpr(
     input_recommandations, article_article_gt, dataset, names_to_id, sample_size=-1, popular_titles=None, titles=[]
 ):
+    with open('recos.pkl', 'wb') as handle:
+        pickle.dump(input_recommandations, handle, protocol=pickle.HIGHEST_PROTOCOL)
     percentiles = []
     for reco_idx in tqdm(input_recommandations):
         wiki_title = titles[reco_idx]

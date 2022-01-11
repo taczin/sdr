@@ -8,6 +8,7 @@ from utils import switch_functions
 from utils.model_utils import extract_model_path_for_hyperparams
 from subprocess import Popen
 import pandas as pd
+from typing import Optional
 
 
 class DocEmbeddingTemplate(LightningModule):
@@ -22,7 +23,7 @@ class DocEmbeddingTemplate(LightningModule):
         self, hparams,
     ):
         super(DocEmbeddingTemplate, self).__init__()
-        self.hparams = hparams
+        self.hparams.update(vars(hparams))
         self.hparams.hparams_dir = extract_model_path_for_hyperparams(self.hparams.default_root_dir, self)
         self.losses = {}
         self.tracks = {}
@@ -37,7 +38,7 @@ class DocEmbeddingTemplate(LightningModule):
 
     def training_step(self, batch, batch_idx, mode="train"):
         """
-        Lightning calls this inside the training loop with the 
+        Lightning calls this inside the training loop with the
         data from the training dataloader passed in as `batch`.
         """
         self.losses = {}
@@ -91,7 +92,7 @@ class DocEmbeddingTemplate(LightningModule):
         self.hparams.mode = "test"
 
     def on_epoch_end_generic(self):
-        if self.trainer.running_sanity_check:
+        if self.trainer.sanity_checking:
             return
         logs = getattr(self, f"{self.hparams.mode}_logs", None)
 
@@ -115,7 +116,7 @@ class DocEmbeddingTemplate(LightningModule):
         self.on_epoch_end_generic()
 
     def on_validation_epoch_end(self) -> None:
-        if self.trainer.running_sanity_check:
+        if self.trainer.sanity_checking:
             return
         if self.current_epoch % 10 == 0:
             self.logger.experiment.add_text("Profiler", self.trainer.profiler.summary(), global_step=self.global_step)
@@ -152,38 +153,38 @@ class DocEmbeddingTemplate(LightningModule):
 
         return [optimizer], [scheduler]
 
-    def dataloader(self):
-        """
-        Returns the relevant dataloader (called once per training).
-        
-        Args:
-            train_val_test (str, optional): Define which dataset to choose from. Defaults to 'train'.
-        
-        Returns:
-            Dataset
-        """
-        raise NotImplementedError()
-
-    def prepare_data(self):
-        """
-        Here we upload the data, called once, all the mask and train, eval split.
-
-        Returns:
-           Tuple of datasets: train,val and test dataset splits
-        """
-        raise NotImplementedError()
-
-    def train_dataloader(self):
-        log.info("Training data loader called.")
-        return self.dataloader(mode="train")
-
-    def val_dataloader(self):
-        log.info("Validation data loader called.")
-        return self.dataloader(mode="val")
-
-    def test_dataloader(self):
-        log.info("Test data loader called.")
-        return self.dataloader(mode="test")
+    # def dataloader(self):
+    #     """
+    #     Returns the relevant dataloader (called once per training).
+    #
+    #     Args:
+    #         train_val_test (str, optional): Define which dataset to choose from. Defaults to 'train'.
+    #
+    #     Returns:
+    #         Dataset
+    #     """
+    #     raise NotImplementedError()
+    #
+    # def setup(self, stage: Optional[str] = None) -> None:
+    #     """
+    #     Here we upload the data, called once, all the mask and train, eval split.
+    #
+    #     Returns:
+    #        Tuple of datasets: train,val and test dataset splits
+    #     """
+    #     raise NotImplementedError()
+    #
+    # def train_dataloader(self):
+    #     log.info("Training data loader called.")
+    #     return self.dataloader(mode="train")
+    #
+    # def val_dataloader(self):
+    #     log.info("Validation data loader called.")
+    #     return self.dataloader(mode="val")
+    #
+    # def test_dataloader(self):
+    #     log.info("Test data loader called.")
+    #     return self.dataloader(mode="test")
 
     @staticmethod
     def add_model_specific_args(parser, task_name, dataset_name, is_lowest_leaf=False):
@@ -192,7 +193,7 @@ class DocEmbeddingTemplate(LightningModule):
 
         Args:
             parent_parser (ArgparseManager): The general argparser
-        
+
         Returns:
             ArgparseManager : The new argparser
         """

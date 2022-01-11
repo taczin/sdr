@@ -9,9 +9,9 @@ from torch.nn import CrossEntropyLoss
 from torch.nn.functional import gelu
 from pytorch_metric_learning import miners, losses, reducers
 
-from transformers.configuration_roberta import RobertaConfig
-from transformers.modeling_bert import BertLayerNorm, BertPreTrainedModel
-from transformers.modeling_roberta import RobertaModel, RobertaLMHead
+from transformers import RobertaConfig
+from transformers import BertPreTrainedModel
+from transformers import RobertaModel, RobertaForMaskedLM
 from pytorch_metric_learning.distances import CosineSimilarity
 
 
@@ -23,10 +23,9 @@ class SimilarityModeling(BertPreTrainedModel):
         super().__init__(config)
         self.hparams = hparams
         config.output_hidden_states = True
-
-        self.roberta = RobertaModel(config)
-        self.lm_head = RobertaLMHead(config)
-        self.init_weights()
+        self.roberta = RobertaForMaskedLM(config)
+        #self.lm_head = RobertaForMaskedLM(config)
+        #self.init_weights()
 
         if self.hparams.metric_for_similarity == "cosine":
             self.metric = CosineSimilarity()
@@ -54,7 +53,7 @@ class SimilarityModeling(BertPreTrainedModel):
             self.similarity_loss_func = losses.TripletMarginLoss(margin=1, distance=self.metric)
 
     def get_output_embeddings(self):
-        return self.lm_head.decoder
+        return self.roberta.lm_head
 
     @staticmethod
     def mean_mask(features, mask):
@@ -88,22 +87,23 @@ class SimilarityModeling(BertPreTrainedModel):
                     position_ids=position_ids,
                     head_mask=head_mask,
                     inputs_embeds=inputs_embeds,
-                    output_hidden_states=output_hidden_states,
+                    output_hidden_states=True,
                     return_dict=return_dict,
                 )
             )
-            sequence_output = outputs[0]
-            prediction_scores = self.lm_head(sequence_output)
-            outputs = (prediction_scores, None, sequence_output)  # Add hidden states and attention if they are here
+            #sequence_output = outputs[0]
+            #prediction_scores = self.lm_head(sequence_output)
+            hidden_states = outputs[1][-1] if len(outputs) > 1 else None
+            outputs = (outputs[0], None, hidden_states)  # Add hidden states and attention if they are here
 
             #######
             # MLM
             #######
-            masked_lm_loss = torch.zeros(1, device=prediction_scores.device).float()
+            masked_lm_loss = torch.zeros(1, device=outputs[0].device).float()
 
             if (masked_lm_labels is not None and (not (masked_lm_labels == -100).all())) and self.hparams.mlm:
                 loss_fct = CrossEntropyLoss()
-                masked_lm_loss = loss_fct(prediction_scores.view(-1, self.config.vocab_size), masked_lm_labels.view(-1))
+                masked_lm_loss = loss_fct(outputs[0].view(-1, self.config.vocab_size), masked_lm_labels.view(-1))
             else:
                 masked_lm_loss = 0
         else:
@@ -118,7 +118,7 @@ class SimilarityModeling(BertPreTrainedModel):
         # Similarity
         #######
         if run_similarity:
-            non_masked_outputs = self.roberta(
+            non_masked_outputs = self.roberta.base_model(
                 non_masked_input_ids,
                 attention_mask=attention_mask,
                 token_type_ids=token_type_ids,
@@ -129,7 +129,7 @@ class SimilarityModeling(BertPreTrainedModel):
                 return_dict=return_dict,
             )
             non_masked_seq_out = non_masked_outputs[0]
-
+            #TODO if N consecutive sentences is >1 then add additional mean over N subsequent vectors
             meaned_sentences = non_masked_seq_out.mean(1)
             miner_output = list(self.miner_func(meaned_sentences, sample_labels))
 

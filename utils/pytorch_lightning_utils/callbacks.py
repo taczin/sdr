@@ -7,4 +7,4 @@ class RunValidationOnStart(Callback):
         pass
 
     def on_train_start(self, trainer: Trainer, pl_module):
-        return trainer.run_evaluation()
+        return trainer.validate(model=pl_module, datamodule=trainer.datamodule)

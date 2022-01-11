@@ -27,12 +27,12 @@ def str2bool(v):
 def default_arg_parser(description="", conflict_handler="resolve", parents=[], is_lowest_leaf=False):
     """
         Generate the default parser - Helper for readability
-        
+
         Args:
             description (str, optional): name of the parser - usually project name. Defaults to ''.
             conflict_handler (str, optional): whether to raise error on conflict or resolve(take last). Defaults to 'resolve'.
             parents (list, optional): [the name of parent argument managers]. Defaults to [].
-        
+
         Returns:
             [type]: [description]
         """
@@ -59,9 +59,9 @@ def get_non_default(parsed,parser):
     }
     return non_default
 
-    
+
 def init_parse_argparse_default_params(parser, dataset_name=None, arch=None):
-    TASK_OPTIONS = ["document_similarity"]
+    TASK_OPTIONS = ["document_similarity", "coherence"]
 
     parser.add_argument(
         "--task_name", type=str, default="document_similarity", choices=TASK_OPTIONS, help="The task to solve",
@@ -70,6 +70,7 @@ def init_parse_argparse_default_params(parser, dataset_name=None, arch=None):
 
     DATASET_OPTIONS = {
         "document_similarity": ["video_games", "wines",],
+        "coherence": ["video_games", "wines"],
     }
     parser.add_argument(
         "--dataset_name",
@@ -82,13 +83,13 @@ def init_parse_argparse_default_params(parser, dataset_name=None, arch=None):
 
     ## General learning parameters
     parser.add_argument(
-        "--train_batch_size", default={"document_similarity": 32}[task_name], type=int, help="Number of samples in batch",
+        "--train_batch_size", default={"document_similarity": 32, "coherence": 32}[task_name], type=int, help="Number of samples in batch",
     )
     parser.add_argument(
-        "--max_epochs", default={"document_similarity": 50}[task_name], type=int, help="Number of epochs to train",
+        "--max_epochs", default={"document_similarity": 50, "coherence": 50}[task_name], type=int, help="Number of epochs to train",
     )
     parser.add_argument(
-        "-lr", default={"document_similarity": 2e-5}[task_name], type=float, help="Learning rate",
+        "-lr", default={"document_similarity": 2e-5, "coherence": 2e-5}[task_name], type=float, help="Learning rate",
     )
 
     parser.add_argument("--optimizer", default="adamW", help="Optimizer to use")
@@ -111,7 +112,7 @@ def init_parse_argparse_default_params(parser, dataset_name=None, arch=None):
 
     ### Model Parameters
     parser.add_argument(
-        "--arch", "--architecture", default={"document_similarity": "SDR"}[task_name], help="Architecture",
+        "--arch", "--architecture", default={"document_similarity": "SDR", "coherence": "CoherenceBaseline"}[task_name], help="Architecture",
     )
 
     architecture = arch or parser.parse_known_args()[0].arch

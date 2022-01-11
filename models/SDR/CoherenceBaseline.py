@@ -5,7 +5,7 @@ from data.datasets import (
 )
 from utils.argparse_init import str2bool
 from models.SDR.SDR_utils import MPerClassSamplerDeter
-from data.data_utils import get_gt_seeds_titles, reco_sentence_collate, reco_sentence_test_collate
+from data.data_utils import get_gt_seeds_titles, reco_sentence_collate, reco_sentence_test_collate, coherence_sentence_collate
 from functools import partial
 import os
 from models.reco.hierarchical_reco import vectorize_reco_hierarchical
@@ -24,7 +24,7 @@ from typing import Optional
 from pytorch_lightning import LightningDataModule
 
 
-class SDR(TransformersBase):
+class CoherenceBaseline(TransformersBase):
 
     """
     Author: Dvir Ginzburg.
@@ -36,7 +36,7 @@ class SDR(TransformersBase):
         self, hparams,
     ):
         """Stub."""
-        super(SDR, self).__init__(hparams)
+        super(CoherenceBaseline, self).__init__(hparams)
 
 
     def forward_train(self, batch):
@@ -169,7 +169,7 @@ class SDR(TransformersBase):
         return parser
 
 
-class SDRDataset(LightningDataModule):
+class CoherenceDataset(LightningDataModule):
     def __init__(self, hparams, tokenizer):
         super().__init__()
         self.tokenizer = tokenizer
@@ -178,34 +178,45 @@ class SDRDataset(LightningDataModule):
     def train_dataloader(self):
         sampler = MPerClassSampler(
             self.train_dataset.labels,
-            2,
+            1,
             batch_size=self.hparams.train_batch_size,
             length_before_new_iter=(self.hparams.limit_train_batches) * self.hparams.train_batch_size,
         )
-
+        if self.hparams.task_name == "document_similarity":
+            collate_fn = reco_sentence_collate
+        elif self.hparams.task_name == "coherence":
+            collate_fn = coherence_sentence_collate
+        else:
+            raise Exception("Invalid task name")
         loader = DataLoader(
             self.train_dataset,
             num_workers=self.hparams.num_data_workers,
             sampler=sampler,
             batch_size=self.hparams.train_batch_size,
-            collate_fn=partial(reco_sentence_collate, tokenizer=self.tokenizer,),
+            collate_fn=partial(collate_fn, tokenizer=self.tokenizer,),
         )
         return loader
 
     def val_dataloader(self):
         sampler = MPerClassSamplerDeter(
             self.val_dataset.labels,
-            2,
+            1,
             length_before_new_iter=self.hparams.limit_val_indices_batches,
             batch_size=self.hparams.val_batch_size,
         )
 
+        if self.hparams.task_name == "document_similarity":
+            collate_fn = reco_sentence_collate
+        elif self.hparams.task_name == "coherence":
+            collate_fn = coherence_sentence_collate
+        else:
+            raise Exception("Invalid task name")
         loader = DataLoader(
             self.val_dataset,
             num_workers=self.hparams.num_data_workers,
             sampler=sampler,
             batch_size=self.hparams.val_batch_size,
-            collate_fn=partial(reco_sentence_collate, tokenizer=self.tokenizer,),
+            collate_fn=partial(collate_fn, tokenizer=self.tokenizer,),
         )
         return loader
 
@@ -230,14 +241,14 @@ class SDRDataset(LightningDataModule):
             and self.hparams.block_size < self.tokenizer.max_len_single_sentence
             else self.tokenizer.max_len_single_sentence
         )
-        self.train_dataset = WikipediaTextDatasetParagraphsSentences(
+        self.train_dataset = WikipediaTextDatasetOnePlusNCoherence(
             tokenizer=self.tokenizer,
             hparams=self.hparams,
             dataset_name=self.dataset_name,
             block_size=block_size,
             mode="train",
         )
-        self.val_dataset = WikipediaTextDatasetParagraphsSentences(
+        self.val_dataset = WikipediaTextDatasetOnePlusNCoherence(
             tokenizer=self.tokenizer,
             hparams=self.hparams,
             dataset_name=self.dataset_name,
@@ -255,5 +266,4 @@ class SDRDataset(LightningDataModule):
             mode="test",
         )
         print('data prepared')
-
 

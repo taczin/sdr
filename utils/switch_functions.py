@@ -21,9 +21,12 @@ def model_class_pointer(task_name, arch):
     if task_name == "document_similarity":
         if arch == "SDR":
             from models.SDR.SDR import SDR
-
             return SDR
-    raise Exception("Unkown task")
+    elif task_name == "coherence":
+        if arch == "CoherenceBaseline":
+            from models.SDR.CoherenceBaseline import CoherenceBaseline
+            return CoherenceBaseline
+    raise Exception("Unknown task")
 
 
 def choose_optimizer(params, network_parameters):
@@ -67,5 +70,6 @@ from transformers import (
 def choose_model_class_configuration(arch, base_model_name):
     MODEL_CLASSES = {
         "SDR_roberta": (RobertaConfig, SimilarityModeling, RobertaTokenizer),
+        "CoherenceBaseline_roberta": (RobertaConfig, SimilarityModeling, RobertaTokenizer)
     }
     return MODEL_CLASSES[f"{arch}_{base_model_name}"]

@@ -10,3 +10,4 @@
 **/datasets/video_games/*
 !**/datasets/video_games/gt
 **/output/*
+/.idea

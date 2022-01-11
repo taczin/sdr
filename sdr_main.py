@@ -10,6 +10,8 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from utils.argparse_init import default_arg_parser, init_parse_argparse_default_params
 import logging
+from models.SDR.SDR import SDRDataset
+from models.SDR.CoherenceBaseline import CoherenceDataset
 
 logging.basicConfig(level=logging.INFO)
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -36,7 +38,10 @@ def main_train(model_class_pointer, hparams,parser):
         hparams = load_params_from_checkpoint(hparams, parser)
 
     model = model_class_pointer(hparams)
-
+    if hparams.arch == "CoherenceBaseline":
+        sdr_dm = CoherenceDataset(hparams, model.tokenizer)
+    else:
+        sdr_dm = SDRDataset(hparams, model.tokenizer)
 
     logger = TensorBoardLogger(save_dir=model.hparams.hparams_dir,name='',default_hp_metric=False)
     logger.log_hyperparams(model.hparams, metrics={model.hparams.metric_to_track: 0})
@@ -45,13 +50,14 @@ def main_train(model_class_pointer, hparams,parser):
     trainer = pytorch_lightning.Trainer(
         num_sanity_val_steps=2,
         gradient_clip_val=hparams.max_grad_norm,
-        callbacks=[RunValidationOnStart()],
+        #callbacks=[RunValidationOnStart()],
         checkpoint_callback=ModelCheckpoint(
             save_top_k=3,
             save_last=True,
             mode="min" if "acc" not in hparams.metric_to_track else "max",
             monitor=hparams.metric_to_track,
-            filepath=os.path.join(model.hparams.hparams_dir, "{epoch}"),
+            dirpath=model.hparams.hparams_dir,
+            filename="{epoch}",
             verbose=True,
         ),
         logger=logger,
@@ -60,7 +66,7 @@ def main_train(model_class_pointer, hparams,parser):
         distributed_backend="dp",
         limit_val_batches=hparams.limit_val_batches,
         limit_train_batches=hparams.limit_train_batches,
-        limit_test_batches=hparams.limit_test_batches,
+        limit_test_batches= hparams.limit_test_batches,
         check_val_every_n_epoch=hparams.check_val_every_n_epoch,
         profiler=SimpleProfiler(),
         accumulate_grad_batches=hparams.accumulate_grad_batches,
@@ -69,11 +75,11 @@ def main_train(model_class_pointer, hparams,parser):
         resume_from_checkpoint=hparams.resume_from_checkpoint,
     )
     if(not hparams.test_only):
-        trainer.fit(model)
+        trainer.fit(model, datamodule=sdr_dm)
     else:
         if(hparams.resume_from_checkpoint is not None):
             model = model.load_from_checkpoint(hparams.resume_from_checkpoint,hparams=hparams, map_location=torch.device(f"cpu"))
-    trainer.test(model)
+    trainer.test(model, sdr_dm)
 
 
 if __name__ == "__main__":

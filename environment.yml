@@ -1,0 +1,21 @@
+name: sdr
+channels:
+  - defaults
+  - conda-forge
+  - metric-learning
+  - pytorch
+dependencies:
+  - python=3.7
+  - pytorch
+  - cudatoolkit=10.2
+  - torchvision
+  - pandas
+  - pillow
+  - faiss
+  - numpy
+  - pytorch-metric-learning
+  - pytorch-lightning
+  - pip
+  - transformers
+  - nltk
+prefix: C:\Users\tczin\AppData\Local\Continuum\anaconda3\envs\sdr
