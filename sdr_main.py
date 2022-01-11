@@ -63,7 +63,7 @@ def main_train(model_class_pointer, hparams,parser):
         logger=logger,
         max_epochs=hparams.max_epochs,
         gpus=hparams.gpus,
-        distributed_backend="dp",
+        distributed_backend="ddp",
         limit_val_batches=hparams.limit_val_batches,
         limit_train_batches=hparams.limit_train_batches,
         limit_test_batches= hparams.limit_test_batches,
