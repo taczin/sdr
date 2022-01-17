@@ -1,14 +1,15 @@
 name: sdr
 channels:
+  - pytorch
   - defaults
   - conda-forge
   - metric-learning
-  - pytorch
 dependencies:
-  - python=3.7
   - pytorch
-  - cudatoolkit=10.2
   - torchvision
+  - cudatoolkit=10.2
+  - torchaudio
+  - python=3.7
   - pandas
   - pillow
   - faiss
