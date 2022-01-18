@@ -50,6 +50,7 @@ class WikipediaTextDatasetParagraphsSentences(Dataset):
 
             for idx_article, article in enumerate(tqdm(all_articles)):
                 this_sample_sections = []
+                print(article[1], len(article[1]))
                 title, sections = article[0], ast.literal_eval(article[1])
                 valid_sections_count = 0
                 for section_idx, section in enumerate(sections):
