@@ -118,8 +118,11 @@ class WikipediaTextDatasetParagraphsSentences(Dataset):
         raw_data_path = f"data/datasets/{dataset_name}/raw_data"
         os.makedirs(os.path.dirname(raw_data_path), exist_ok=True)
         if not os.path.exists(raw_data_path):
-            #os.system(f"wget -O {raw_data_path} {raw_data_link(dataset_name)}")
-            os.system(f"curl.exe -o {raw_data_path} {raw_data_link(dataset_name)}")
+            print('operating system: {}'.format(sys.platform))
+            if sys.platform == 'win32':
+                os.system(f"curl.exe -o {raw_data_path} {raw_data_link(dataset_name)}")
+            else:
+                os.system(f"wget -O {raw_data_path} {raw_data_link(dataset_name)}")
         return raw_data_path
 
     def __len__(self):
