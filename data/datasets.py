@@ -47,9 +47,12 @@ class WikipediaTextDatasetParagraphsSentences(Dataset):
 
             self.examples = []
             self.indices_map = []
+            max_str_len = 0
 
             for idx_article, article in enumerate(tqdm(all_articles)):
                 this_sample_sections = []
+                if len(article[1]) > max_str_len:
+                    max_str_len = len(article[1])
                 print(len(article[1]))
                 title, sections = article[0], ast.literal_eval(article[1])
                 valid_sections_count = 0
