@@ -53,10 +53,11 @@ class WikipediaTextDatasetParagraphsSentences(Dataset):
                 this_sample_sections = []
                 if len(article[1]) > max_str_len:
                     max_str_len = len(article[1])
-                print(max_str_len, len(article[1]))
                 try:
                     title, sections = article[0], ast.literal_eval(article[1])
                 except SyntaxError:
+                    print("Article IDX: ", idx_article)
+                    print(max_str_len, len(article[1]))
                     print(article[1])
                 valid_sections_count = 0
                 for section_idx, section in enumerate(sections):
