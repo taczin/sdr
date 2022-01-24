@@ -216,6 +216,7 @@ class SDRDataset(LightningDataModule):
             num_workers=self.hparams.num_data_workers,
             batch_size=self.hparams.test_batch_size,
             collate_fn=partial(reco_sentence_test_collate, tokenizer=self.tokenizer,),
+            shuffle=False,
         )
         return loader
 
